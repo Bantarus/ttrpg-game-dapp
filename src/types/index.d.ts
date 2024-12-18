@@ -1,0 +1,2 @@
+typescript
+declare module 'phaser';
