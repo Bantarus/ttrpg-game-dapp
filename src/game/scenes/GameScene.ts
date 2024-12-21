@@ -4,6 +4,7 @@ import { PlayerCharacter } from '../characters/PlayerCharacter';
 import { EnemyCharacter } from '../characters/EnemyCharacter';
 import { CharacterFactory } from '../characters/CharacterFactory';
 import { GameState, GamePhase } from '../types';
+import { TiledMap } from '../types/map';
 
 export class GameScene extends BaseScene {
   private gameState!: GameState;
@@ -23,6 +24,10 @@ export class GameScene extends BaseScene {
   private interactionWheels: Set<Phaser.GameObjects.Container> = new Set();
   private gridWidth: number = 1600; // 25 tiles * 64px
   private gridHeight: number = 1600; // 25 tiles * 64px
+  private map!: Phaser.Tilemaps.Tilemap;
+  private tileset!: Phaser.Tilemaps.Tileset;
+  private groundLayer!: Phaser.Tilemaps.TilemapLayer;
+  private wallsLayer!: Phaser.Tilemaps.TilemapLayer;
 
   constructor() {
     super('GameScene');
@@ -50,6 +55,10 @@ export class GameScene extends BaseScene {
       console.log('Action icons loaded successfully');
       console.log('Available frames:', this.textures.get('action-icons').getFrameNames());
     });
+
+    // Load tilemap and tileset with correct paths and names
+    this.load.tilemapTiledJSON('desert-map', 'assets/tiles/map-01.json');
+    this.load.image('tmw_desert_spacing', 'assets/tiles/tmw_desert_spacing.png');
   }
 
   init(): void {
@@ -172,61 +181,65 @@ export class GameScene extends BaseScene {
   }
 
   private createBoard(): void {
-    const worldWidth = this.gridWidth;  // Use class property
-    const worldHeight = this.gridHeight; // Use class property
+    const worldWidth = this.gridWidth;
+    const worldHeight = this.gridHeight;
     const tileSize = this.tileSize;
+    
+    // Create a container for the grid with appropriate depth
+    const gridContainer = this.add.container(0, 0);
+    gridContainer.setDepth(5); // Above ground (0) but below characters (10)
     
     // Calculate grid dimensions
     const gridCols = Math.floor(worldWidth / tileSize);   
     const gridRows = Math.floor(worldHeight / tileSize); 
     
-    // Create grid lines
+    // Create grid graphics object
+    const gridGraphics = this.add.graphics();
+    gridGraphics.lineStyle(1, 0x333333, 0.5); // Thinner, semi-transparent lines
+    
+    // Draw vertical lines
     for (let x = 0; x <= gridCols; x++) {
-      this.add.line(
-        0,
-        0,
-        x * tileSize,
-        0,
-        x * tileSize,
-        worldHeight,
-        0x333333
-      ).setOrigin(0);
+      gridGraphics.beginPath();
+      gridGraphics.moveTo(x * tileSize, 0);
+      gridGraphics.lineTo(x * tileSize, worldHeight);
+      gridGraphics.strokePath();
     }
 
+    // Draw horizontal lines
     for (let y = 0; y <= gridRows; y++) {
-      this.add.line(
-        0,
-        0,
-        0,
-        y * tileSize,
-        worldWidth,
-        y * tileSize,
-        0x333333
-      ).setOrigin(0);
+      gridGraphics.beginPath();
+      gridGraphics.moveTo(0, y * tileSize);
+      gridGraphics.lineTo(worldWidth, y * tileSize);
+      gridGraphics.strokePath();
     }
 
-    // Create grid cells
+    // Create grid cells with hover effect
     for (let y = 0; y < gridRows; y++) {
       for (let x = 0; x < gridCols; x++) {
         const cell = this.add.rectangle(
-          x * tileSize,
-          y * tileSize,
-          tileSize,
-          tileSize,
+          x * tileSize + tileSize / 2, // Center the rectangle in the cell
+          y * tileSize + tileSize / 2,
+          tileSize - 1, // Slightly smaller to avoid overlap
+          tileSize - 1,
           0x444444,
-          0.1
-        ).setOrigin(0);
-
+          0
+        );
+        
         // Make cells interactive
         cell.setInteractive()
           .on('pointerover', () => {
-            cell.setFillStyle(0x666666, 0.3);
+            cell.setFillStyle(0x666666, 0.2);
           })
           .on('pointerout', () => {
-            cell.setFillStyle(0x444444, 0.1);
+            cell.setFillStyle(0x444444, 0);
           });
+        
+        gridContainer.add(cell);
       }
     }
+
+    // Add the grid graphics to the container
+    gridContainer.add(gridGraphics);
 
     console.log('Grid dimensions:', { gridCols, gridRows, tileSize });
   }
@@ -719,41 +732,98 @@ export class GameScene extends BaseScene {
   }
 
   create(): void {
-    // Initialize the board first
-    this.createBoard();
+    // Create map first
+    this.createMap();
     
-    // Create player (only once)
-    this.createPlayer();
+    // Create player with better spawn point handling
+    this.createPlayerAtSpawn();
+
+    // Spawn map objects
+    this.spawnObjectsFromMap();
     
-    // Then center camera
+    // Center camera on player
     this.centerCameraOnPlayer();
 
-    // Listen for game resize events
-    this.scale.on('resize', (gameSize: any) => {
-      this.cameras.main.setViewport(0, 0, gameSize.width, gameSize.height);
-      this.centerCameraOnPlayer();
-    });
+    // Setup resize handler
+    this.scale.on('resize', this.handleResize, this);
   }
 
+  private handleResize(gameSize: Phaser.Structs.Size): void {
+    const camera = this.cameras.main;
+    
+    // Update camera viewport
+    camera.setViewport(0, 0, gameSize.width, gameSize.height);
+    
+    // Update camera bounds with some padding
+    const padding = 100;
+    camera.setBounds(
+      -padding,
+      -padding,
+      this.map.widthInPixels + padding * 2,
+      this.map.heightInPixels + padding * 2
+    );
+
+    // Recenter on player
+    this.centerCameraOnPlayer();
+  }
+
+  // Update createPlayer to accept coordinates
+  private createPlayer(x: number, y: number): void {
+    this.player = this.characterFactory.createPlayerCharacter(x, y);
+    
+    // Setup camera following with lerp
+    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+    
+    // Listen for drag events to manage camera following
+    this.player.on('dragstart', () => {
+      this.cameraFollowingEnabled = false;
+      this.cameras.main.stopFollow();
+    });
+
+    this.player.on('dragend', () => {
+      // Always recenter camera on character after drag
+      this.cameras.main.stopFollow();
+      // Pan to character position
+      this.cameras.main.pan(
+        this.player.x,
+        this.player.y,
+        250, // Duration in ms
+        'Sine.easeOut',
+        false,
+        (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+          if (progress === 1) {
+            // Resume smooth following after pan completes
+            this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+          }
+        }
+      );
+    });
+
+    this.player.on('moveComplete', (gridPosition: { x: number, y: number }) => {
+      console.log('Character moved to grid position:', gridPosition);
+      // Here you can implement multiplayer sync or other move-related logic
+    });
+
+    this.initializeCharacterEvents(this.player);
+  }
+
+  // Update centerCameraOnPlayer
   public centerCameraOnPlayer(): void {
     if (this.player) {
-      // Get current viewport dimensions
-      const { width, height } = this.cameras.main;
+      const camera = this.cameras.main;
+      const { width, height } = camera;
       
-      // Center camera on player with smooth follow
-      this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-      
-      // Set camera bounds using gridWidth/Height instead of grid.width
-      this.cameras.main.setBounds(
-        -width/2, 
-        -height/2,
-        this.gridWidth + width,
-        this.gridHeight + height
-      );
-
       // Set deadzone for smoother camera following
       const deadZoneSize = Math.min(width, height) * 0.1;
-      this.cameras.main.setDeadzone(deadZoneSize, deadZoneSize);
+      camera.setDeadzone(deadZoneSize, deadZoneSize);
+      
+      // Ensure camera doesn't show outside map bounds
+      camera.setBounds(
+        0,
+        0,
+        this.map.widthInPixels,
+        this.map.heightInPixels
+      );
     }
   }
 
@@ -767,5 +837,150 @@ export class GameScene extends BaseScene {
       this.gridWidth + width/2,
       this.gridHeight + width/2
     );
+  }
+
+  private createMap(): void {
+    // Create the tilemap from loaded JSON
+    this.map = this.make.tilemap({ key: 'desert-map' });
+    
+    // Add the tileset
+    this.tileset = this.map.addTilesetImage(
+      'tmw_desert_spacing',
+      'tmw_desert_spacing',
+      32,
+      32,
+      1,
+      1
+    )!;
+
+    // Create the ground layer and set its depth to 0
+    this.groundLayer = this.map.createLayer('Calque de Tuiles 1', this.tileset)!;
+    this.groundLayer.setDepth(0);
+
+    // Set collisions based on tile properties
+    this.groundLayer.setCollisionByProperty({ State: 3 });
+
+    // Enable collision with player
+    if (this.player) {
+      this.physics.add.collider(this.player, this.groundLayer);
+    }
+
+    // Set world bounds based on map dimensions
+    const mapWidth = this.map.widthInPixels;
+    const mapHeight = this.map.heightInPixels;
+    
+    this.physics.world.setBounds(0, 0, mapWidth, mapHeight);
+    this.cameras.main.setBounds(0, 0, mapWidth, mapHeight);
+
+    // Update grid dimensions based on map
+    this.gridWidth = mapWidth;
+    this.gridHeight = mapHeight;
+  }
+
+  private spawnObjectsFromMap(): void {
+    // Spawn chests
+    const chestLayer = this.map.getObjectLayer('Chests');
+    if (chestLayer && chestLayer.objects) {
+      chestLayer.objects.forEach(chest => {
+        // Create chest at position
+        const chestSprite = this.add.sprite(chest.x!, chest.y!, 'chest');
+        chestSprite.setOrigin(0, 1); // Adjust origin to match Tiled coordinates
+      });
+    }
+
+    // Spawn enemies
+    const lizardLayer = this.map.getObjectLayer('Lizards');
+    if (lizardLayer && lizardLayer.objects) {
+      lizardLayer.objects.forEach(lizard => {
+        const enemy = this.characterFactory.createEnemyCharacter(
+          lizard.x!,
+          lizard.y!
+        );
+        
+        // Set name if specified in Tiled
+        if (lizard.name) {
+          enemy.setName(lizard.name);
+        }
+        
+        this.initializeCharacterEvents(enemy);
+        this.gameState.players.set(enemy.id, enemy);
+      });
+    }
+  }
+
+  private createPlayerAtSpawn(): void {
+    // First try to find a spawn point tile
+    const tileSpawn = this.findSpawnPointFromTiles();
+    
+    if (tileSpawn) {
+      console.log('Found spawn point tile:', tileSpawn);
+      this.createPlayer(tileSpawn.x, tileSpawn.y);
+      return;
+    }
+
+    // Fallback to finding a walkable position
+    const position = this.findDefaultSpawnPosition();
+    console.log('Using default spawn position:', position);
+    this.createPlayer(position.x, position.y);
+  }
+
+  private findSpawnPointFromTiles(): { x: number, y: number } | null {
+    for (let y = 0; y < this.map.height; y++) {
+      for (let x = 0; x < this.map.width; x++) {
+        const tile = this.groundLayer.getTileAt(x, y);
+        if (tile && tile.properties.State === 4) { // State 4 is spawn point
+          return {
+            x: (x + 0.5) * this.map.tileWidth,
+            y: (y + 0.5) * this.map.tileHeight
+          };
+        }
+      }
+    }
+    return null;
+  }
+
+  private findDefaultSpawnPosition(): { x: number, y: number } {
+    // Try to find a sand tile (State: 0) near the center
+    const centerX = Math.floor(this.map.width / 2);
+    const centerY = Math.floor(this.map.height / 2);
+    
+    // Search in expanding square pattern
+    const searchRadius = 10;
+    for (let r = 0; r < searchRadius; r++) {
+      for (let dx = -r; dx <= r; dx++) {
+        for (let dy = -r; dy <= r; dy++) {
+          const tileX = centerX + dx;
+          const tileY = centerY + dy;
+          
+          const tile = this.groundLayer.getTileAt(tileX, tileY);
+          if (tile && tile.properties.State === 0) {
+            return {
+              x: (tileX + 0.5) * this.map.tileWidth,
+              y: (tileY + 0.5) * this.map.tileHeight
+            };
+          }
+        }
+      }
+    }
+
+    // Fallback to center if no suitable tile found
+    return {
+      x: this.map.widthInPixels / 2,
+      y: this.map.heightInPixels / 2
+    };
+  }
+
+  private isTileWalkable(tileX: number, tileY: number): boolean {
+    // Check if tile is within map bounds
+    if (tileX < 0 || tileX >= this.map.width || tileY < 0 || tileY >= this.map.height) {
+      return false;
+    }
+
+    // Get tile at position
+    const tile = this.groundLayer.getTileAt(tileX, tileY);
+    if (!tile) return true; // No tile means walkable
+    
+    // Check State property - 3 means wall/collision, 0 means walkable
+    return tile.properties?.State !== 3;
   }
 } 

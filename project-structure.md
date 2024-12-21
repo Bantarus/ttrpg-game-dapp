@@ -2,6 +2,34 @@
 
 ## Recent Updates
 
+### Depth Management System
+- Implemented clear depth hierarchy:
+  - Ground layer (0)
+  - Grid overlay (5)
+  - Characters (10)
+  - UI elements (20)
+- Character container depth management
+  - Internal component ordering
+  - Proper layering within containers
+
+### Map Integration
+- Enhanced Tiled map support
+- Proper tileset handling
+- Layer management
+- Spawn point system
+
+### Key Components
+
+#### `/game/scenes/`
+- Enhanced GameScene with proper depth management
+- Map integration improvements
+- Grid visualization system
+
+#### `/game/characters/`
+- Updated depth management in character system
+- Enhanced visual layering
+- Proper container depth handling
+
 ### Character System Refactoring
 - Split into three distinct classes:
   - BaseCharacter: Abstract base with common functionality
@@ -40,6 +68,15 @@
 - Enhanced drag and drop system
 
 ## Visual System
+- Updated depth-based rendering:
+  - Map layers
+  - Grid overlay
+  - Character components
+  - UI elements
+- Enhanced visual feedback
+  - Grid cell highlighting
+  - Character selection
+  - Status effects
 - Color Coding
   - Player health: Green -> Yellow -> Red
   - Enemy health: Red
@@ -81,6 +118,8 @@ src/
 │   ├── types/
 │   │   ├── index.ts
 │   │   └──character.ts        # Character-related type definitions
+│   │   ├── character.ts        # Character-related type definitions
+│   │   └── map.ts             # Map and tilemap type definitions
 │   └── config.ts
 │
 ├── lib/

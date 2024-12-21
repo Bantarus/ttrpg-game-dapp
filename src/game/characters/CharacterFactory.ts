@@ -4,6 +4,12 @@ import { CharacterConfig } from '../types/character';
 
 export class CharacterFactory {
   private scene: Phaser.Scene;
+  private readonly DEPTH = {
+    GROUND: 0,
+    GRID: 5,
+    CHARACTERS: 10,
+    UI: 20
+  };
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
@@ -26,7 +32,9 @@ export class CharacterFactory {
       }
     };
     
-    return new PlayerCharacter(config);
+    const player = new PlayerCharacter(config);
+    player.setDepth(this.DEPTH.CHARACTERS);
+    return player;
   }
 
   createEnemyCharacter(x: number, y: number): EnemyCharacter {
@@ -46,6 +54,8 @@ export class CharacterFactory {
       }
     };
     
-    return new EnemyCharacter(config);
+    const enemy = new EnemyCharacter(config);
+    enemy.setDepth(this.DEPTH.CHARACTERS);
+    return enemy;
   }
 } 

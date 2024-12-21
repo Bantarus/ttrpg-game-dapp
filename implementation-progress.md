@@ -78,7 +78,38 @@
 - [x] Asset loading system
 - [x] Action icons atlas integration
 
+### Map System
+- [x] Tiled map integration
+- [x] Desert tileset implementation
+- [x] Proper layer depth management
+  - Ground layer (depth 0)
+  - Grid overlay (depth 5)
+  - Characters (depth 10)
+  - UI elements (depth 20)
+- [x] Grid visualization
+  - Semi-transparent lines
+  - Interactive cell highlighting
+  - Proper depth ordering
+- [x] Collision detection based on tile properties
+- [x] Spawn point system
+  - Tile-based spawn points
+  - Fallback to walkable tiles
+  - Center-based search pattern
+
+### Character System
+- [x] Abstract base character class implementation
+- [x] Proper depth management for character components
+  - Selection glow (depth -1 within container)
+  - Background (depth 0 within container)
+  - Portrait sprite (depth 1 within container)
+  - Health ring (depth 2 within container)
+  - Status effects (depth 3 within container)
+
 ## 🚧 In Progress
+- [ ] Enhanced map editor integration
+- [ ] Multiple map support
+- [ ] Dynamic tile properties
+- [ ] Map transitions
 - [ ] Battle mechanics implementation
 - [ ] Character creation interface
 - [ ] Wallet integration with Archethic

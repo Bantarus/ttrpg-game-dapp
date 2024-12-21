@@ -37,6 +37,9 @@ export abstract class BaseCharacter extends Phaser.GameObjects.Container {
   constructor(config: CharacterConfig) {
     super(config.scene, config.x, config.y);
     
+    // Set initial depth for the container
+    this.setDepth(10); // Characters above ground layer
+    
     // Initialize base container and properties
     this.setSize(this.tileSize, this.tileSize);
     
@@ -92,15 +95,17 @@ export abstract class BaseCharacter extends Phaser.GameObjects.Container {
   protected createBaseVisuals(): void {
     // Create circular background
     const bg = this.scene.add.graphics();
+    bg.setDepth(0); // Local depth within container
     bg.fillStyle(0x222222, 0.9);
     bg.lineStyle(2, 0x333333);
     bg.fillCircle(0, 0, this.tileSize / 2);
     bg.strokeCircle(0, 0, this.tileSize / 2);
     this.add(bg);
 
-    // Create character portrait
+    // Create character portrait with local depth
     this.portraitSprite = this.scene.add.sprite(0, 0, this.sprite.texture.key)
-      .setDisplaySize(this.tileSize * 0.7, this.tileSize * 0.7);
+      .setDisplaySize(this.tileSize * 0.7, this.tileSize * 0.7)
+      .setDepth(1); // Above background within container
     
     // Create circular mask for portrait
     const mask = this.scene.add.graphics()
@@ -115,6 +120,7 @@ export abstract class BaseCharacter extends Phaser.GameObjects.Container {
 
   protected createHealthRing(): void {
     this.healthRing = this.scene.add.graphics();
+    this.healthRing.setDepth(2); // Above portrait within container
     this.add(this.healthRing);
     this.updateHealthRing();
   }
@@ -144,11 +150,13 @@ export abstract class BaseCharacter extends Phaser.GameObjects.Container {
 
   protected createStatusEffectsContainer(): void {
     this.statusEffects = this.scene.add.container(0, this.tileSize * 0.4);
+    this.statusEffects.setDepth(3); // Above health ring within container
     this.add(this.statusEffects);
   }
 
   protected createSelectionGlow(): void {
     this.selectionGlow = this.scene.add.graphics();
+    this.selectionGlow.setDepth(-1); // Below everything within container
     this.add(this.selectionGlow);
     this.updateSelectionGlow(false);
   }

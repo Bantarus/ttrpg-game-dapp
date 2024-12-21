@@ -20,10 +20,14 @@ A blockchain-based MMO TTRPG board game built with Next.js and Phaser, featuring
 
 ### 3.1 Game Board
 - Grid-based map system similar to Talisman
-- Tile-based movement
-- Multiple regions/zones
-- Camera system following active character
-- Minimap for navigation
+- Proper depth management system
+  - Ground layer (depth 0)
+  - Grid overlay (depth 5)
+  - Characters (depth 10)
+  - UI elements (depth 20)
+- Interactive grid cells
+- Tile-based collision system
+- Spawn point management
 
 ### 3.2 Character System
 #### Character Implementation
@@ -268,6 +272,46 @@ interface MobileOptimization {
     touchFriendly: boolean;
     gestureSupport: boolean;
     adaptiveUI: boolean;
+  };
+}
+```
+
+### 4.1 Depth Management
+```typescript
+interface DepthLayers {
+  GROUND: 0;
+  GRID: 5;
+  CHARACTERS: 10;
+  UI: 20;
+}
+
+interface CharacterDepths {
+  SELECTION: -1;
+  BACKGROUND: 0;
+  PORTRAIT: 1;
+  HEALTH: 2;
+  STATUS: 3;
+}
+```
+
+### 4.2 Map Integration
+```typescript
+interface MapRequirements {
+  tilesetHandling: {
+    margin: number;
+    spacing: number;
+    tileWidth: number;
+    tileHeight: number;
+  };
+  layerManagement: {
+    ground: TilemapLayer;
+    objects: ObjectLayer;
+    collision: CollisionLayer;
+  };
+  spawnSystem: {
+    tileBasedSpawns: boolean;
+    fallbackMechanism: boolean;
+    searchPattern: 'expanding' | 'spiral';
   };
 }
 ```
