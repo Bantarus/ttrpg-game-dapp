@@ -43,4 +43,29 @@ export interface TiledTileset {
     id: number;
     properties: TiledProperty[];
   }[];
+}
+
+// New types for enhanced map support
+interface SpawnPoint {
+  x: number;
+  y: number;
+  type: 'player' | 'enemy' | 'neutral';
+  properties?: Record<string, any>;
+}
+
+interface MapExit {
+  x: number;
+  y: number;
+  targetMap: string;
+  targetX: number;
+  targetY: number;
+  requirements?: Record<string, any>;
+}
+
+interface TileProperties {
+  walkable: boolean;
+  cost?: number;
+  effect?: string;
+  trigger?: string;
+  animation?: string;
 } 

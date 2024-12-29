@@ -6,6 +6,15 @@ import { CharacterFactory } from '../characters/CharacterFactory';
 import { GameState, GamePhase } from '../types';
 import { TiledMap } from '../types/map';
 
+// Add support for custom map properties
+interface MapProperties {
+  name: string;
+  difficulty: number;
+  environment: string;
+  spawnPoints: SpawnPoint[];
+  exits: MapExit[];
+}
+
 export class GameScene extends BaseScene {
   private gameState!: GameState;
   private player!: PlayerCharacter;
@@ -244,46 +253,76 @@ export class GameScene extends BaseScene {
     console.log('Grid dimensions:', { gridCols, gridRows, tileSize });
   }
 
-  private createPlayer(): void {
-    // Position player at grid center
-    const startX = 5;
-    const startY = 5;
-    this.player = this.characterFactory.createPlayerCharacter(
-      startX * this.tileSize + this.tileSize / 2,
-      startY * this.tileSize + this.tileSize / 2
-    );
+  private createPlayer(x: number, y: number): void {
+    this.player = this.characterFactory.createPlayerCharacter(x, y);
+    
+    // Get tile at player position
+    const tileX = Math.floor(x / this.map.tileWidth);
+    const tileY = Math.floor(y / this.map.tileHeight);
+    const tile = this.groundLayer.getTileAt(tileX, tileY);
+
+    // Log tile properties
+    console.log('Player dropped at tile position:', { tileX, tileY });
+    if (tile) {
+        console.log('Tile properties:', {
+            index: tile.index,
+            properties: tile.properties,
+            // Additional tile data that might be useful
+            collides: tile.collides,
+            tileset: tile.tileset.name,
+            layer: tile.layer.name
+        });
+    } else {
+        console.log('No tile found at player position');
+    }
     
     // Setup camera following with lerp
     this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
     
-    // Listen for drag events to manage camera following
+    // Rest of the existing createPlayer code...
     this.player.on('dragstart', () => {
-      this.cameraFollowingEnabled = false;
-      this.cameras.main.stopFollow();
+        this.cameraFollowingEnabled = false;
+        this.cameras.main.stopFollow();
     });
 
     this.player.on('dragend', () => {
-      // Always recenter camera on character after drag
-      this.cameras.main.stopFollow();
-      // Pan to character position
-      this.cameras.main.pan(
-        this.player.x,
-        this.player.y,
-        250, // Duration in ms
-        'Sine.easeOut',
-        false,
-        (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
-          if (progress === 1) {
-            // Resume smooth following after pan completes
-            this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-          }
+        // Get new tile properties after drag
+        const newTileX = Math.floor(this.player.x / this.map.tileWidth);
+        const newTileY = Math.floor(this.player.y / this.map.tileHeight);
+        const newTile = this.groundLayer.getTileAt(newTileX, newTileY);
+
+        console.log('Player dragged to tile position:', { newTileX, newTileY });
+        if (newTile) {
+            console.log('New tile properties:', {
+                index: newTile.index,
+                properties: newTile.properties,
+                collides: newTile.collides,
+                tileset: newTile.tileset?.name ?? 'No tileset',
+                layer: newTile.layer?.name ?? 'No layer'
+            });
         }
-      );
+
+        // Always recenter camera on character after drag
+        this.cameras.main.stopFollow();
+        // Pan to character position
+        this.cameras.main.pan(
+            this.player.x,
+            this.player.y,
+            250, // Duration in ms
+            'Sine.easeOut',
+            false,
+            (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+                if (progress === 1) {
+                    // Resume smooth following after pan completes
+                    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+                }
+            }
+        );
     });
 
     this.player.on('moveComplete', (gridPosition: { x: number, y: number }) => {
-      console.log('Character moved to grid position:', gridPosition);
-      // Here you can implement multiplayer sync or other move-related logic
+        console.log('Character moved to grid position:', gridPosition);
+        // Here you can implement multiplayer sync or other move-related logic
     });
 
     this.initializeCharacterEvents(this.player);
@@ -771,37 +810,73 @@ export class GameScene extends BaseScene {
   private createPlayer(x: number, y: number): void {
     this.player = this.characterFactory.createPlayerCharacter(x, y);
     
+    // Get tile at player position
+    const tileX = Math.floor(x / this.map.tileWidth);
+    const tileY = Math.floor(y / this.map.tileHeight);
+    const tile = this.groundLayer.getTileAt(tileX, tileY);
+
+    // Log tile properties
+    console.log('Player dropped at tile position:', { tileX, tileY });
+    if (tile) {
+        console.log('Tile properties:', {
+            index: tile.index,
+            properties: tile.properties,
+            // Additional tile data that might be useful
+            collides: tile.collides,
+            tileset: tile.tileset.name,
+            layer: tile.layer.name
+        });
+    } else {
+        console.log('No tile found at player position');
+    }
+    
     // Setup camera following with lerp
     this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
     
-    // Listen for drag events to manage camera following
+    // Rest of the existing createPlayer code...
     this.player.on('dragstart', () => {
-      this.cameraFollowingEnabled = false;
-      this.cameras.main.stopFollow();
+        this.cameraFollowingEnabled = false;
+        this.cameras.main.stopFollow();
     });
 
     this.player.on('dragend', () => {
-      // Always recenter camera on character after drag
-      this.cameras.main.stopFollow();
-      // Pan to character position
-      this.cameras.main.pan(
-        this.player.x,
-        this.player.y,
-        250, // Duration in ms
-        'Sine.easeOut',
-        false,
-        (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
-          if (progress === 1) {
-            // Resume smooth following after pan completes
-            this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-          }
+        // Get new tile properties after drag
+        const newTileX = Math.floor(this.player.x / this.map.tileWidth);
+        const newTileY = Math.floor(this.player.y / this.map.tileHeight);
+        const newTile = this.groundLayer.getTileAt(newTileX, newTileY);
+
+        console.log('Player dragged to tile position:', { newTileX, newTileY });
+        if (newTile) {
+            console.log('New tile properties:', {
+                index: newTile.index,
+                properties: newTile.properties,
+                collides: newTile.collides,
+                tileset: newTile.tileset?.name ?? 'No tileset',
+                layer: newTile.layer?.name ?? 'No layer'
+            });
         }
-      );
+
+        // Always recenter camera on character after drag
+        this.cameras.main.stopFollow();
+        // Pan to character position
+        this.cameras.main.pan(
+            this.player.x,
+            this.player.y,
+            250, // Duration in ms
+            'Sine.easeOut',
+            false,
+            (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+                if (progress === 1) {
+                    // Resume smooth following after pan completes
+                    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+                }
+            }
+        );
     });
 
     this.player.on('moveComplete', (gridPosition: { x: number, y: number }) => {
-      console.log('Character moved to grid position:', gridPosition);
-      // Here you can implement multiplayer sync or other move-related logic
+        console.log('Character moved to grid position:', gridPosition);
+        // Here you can implement multiplayer sync or other move-related logic
     });
 
     this.initializeCharacterEvents(this.player);
@@ -875,6 +950,44 @@ export class GameScene extends BaseScene {
     // Update grid dimensions based on map
     this.gridWidth = mapWidth;
     this.gridHeight = mapHeight;
+
+    // Parse map properties - Fixed version
+    const mapProperties: MapProperties = {
+        name: '',
+        difficulty: 1,
+        environment: 'desert',
+        spawnPoints: [],
+        exits: []
+    };
+
+    // Check if map has properties and parse them
+    if (Array.isArray(this.map.properties)) {
+        this.map.properties.forEach(prop => {
+            if (prop.name && prop.value !== undefined) {
+                (mapProperties as any)[prop.name] = prop.value;
+            }
+        });
+    }
+
+    // Parse layers and their properties
+    this.map.layers.forEach(layer => {
+        // Check if layer has properties
+        const layerData = layer.properties;
+        if (Array.isArray(layerData)) {
+            const layerProperties: Record<string, any> = {};
+            
+            layerData.forEach(prop => {
+                if (prop.name && prop.value !== undefined) {
+                    layerProperties[prop.name] = prop.value;
+                }
+            });
+
+            // Handle layer-specific properties
+            if (Object.keys(layerProperties).length > 0) {
+                this.handleLayerProperties(layer, layerProperties);
+            }
+        }
+    });
   }
 
   private spawnObjectsFromMap(): void {
@@ -982,5 +1095,31 @@ export class GameScene extends BaseScene {
     
     // Check State property - 3 means wall/collision, 0 means walkable
     return tile.properties?.State !== 3;
+  }
+
+  // Add the handleLayerProperties method
+  private handleLayerProperties(layer: Phaser.Tilemaps.LayerData, properties: Record<string, any>): void {
+    // Handle different layer properties based on their names/types
+    if (properties.isSpawnLayer) {
+        // Handle spawn layer properties
+        this.handleSpawnLayer(layer);
+    }
+    
+    if (properties.isExitLayer) {
+        // Handle exit layer properties
+        this.handleExitLayer(layer);
+    }
+
+    // Add more layer property handlers as needed
+  }
+
+  private handleSpawnLayer(layer: Phaser.Tilemaps.LayerData): void {
+    // Implementation for handling spawn layer
+    console.log('Processing spawn layer:', layer.name);
+  }
+
+  private handleExitLayer(layer: Phaser.Tilemaps.LayerData): void {
+    // Implementation for handling exit layer
+    console.log('Processing exit layer:', layer.name);
   }
 } 

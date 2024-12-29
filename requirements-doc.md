@@ -371,7 +371,7 @@ interface MapRequirements {
 - Prettier
 - Chrome DevTools for debugging
 
-## 10. Development Guidelines
+## 10. Development Guidelines/
 
 ### 10.1 Character System
 - Use Container-based approach for characters
