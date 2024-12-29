@@ -31,8 +31,8 @@ A blockchain-based MMO TTRPG board game built with Next.js and Phaser, featuring
 
 ### 3.2 Character System
 #### Character Implementation
-- [x] Base character class using Phaser.GameObjects.Container
-- [x] Character specialization (Player/Enemy)
+- [x] Abstract GameCharacter class using Phaser.GameObjects.Container
+- [x] Direct Player/Enemy inheritance from GameCharacter
 - [x] Character factory pattern
 - [x] Basic animations and visual effects
 - [x] Health and stats management
@@ -44,7 +44,7 @@ A blockchain-based MMO TTRPG board game built with Next.js and Phaser, featuring
 #### Character Class Structure
 ```typescript
 interface CharacterSystem {
-  BaseCharacter: abstract class {
+  GameCharacter: abstract class {
     // Common functionality
     stats: CharacterStats;
     position: GridPosition;
@@ -54,16 +54,17 @@ interface CharacterSystem {
     getHealthColor(): number;
     createPulsingRange(): void;
     takeDamage(amount: number): void;
+    onDeath(): void;
   };
   
-  PlayerCharacter: class extends BaseCharacter {
+  PlayerCharacter: class extends GameCharacter {
     // Player-specific implementations
     blueTargetingIndicators: boolean;
     dynamicHealthColors: boolean;
     cameraShakeOnDamage: boolean;
   };
   
-  EnemyCharacter: class extends BaseCharacter {
+  EnemyCharacter: class extends GameCharacter {
     // Enemy-specific implementations
     redTargetingIndicators: boolean;
     consistentRedHealth: boolean;

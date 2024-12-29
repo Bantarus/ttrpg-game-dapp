@@ -19,11 +19,14 @@
 - [x] Basic game stats display
 
 ### Character System
-- [x] Abstract base character class implementation
-- [x] Player character specialization
-  - [x] Blue targeting indicators
-  - [x] Health color transitions
-  - [x] Player-specific damage effects
+- [x] GameCharacter base class implementation
+- [x] Character hierarchy refactoring
+  - [x] Removed redundant BaseCharacter class
+  - [x] GameCharacter as abstract base
+  - [x] Direct inheritance for Player/Enemy characters
+- [x] Blue targeting indicators
+- [x] Health color transitions
+- [x] Player-specific damage effects
 - [x] Enemy character specialization
   - [x] Red targeting indicators
   - [x] Consistent red health bars

@@ -32,7 +32,7 @@
 
 ### Character System Refactoring
 - Split into three distinct classes:
-  - BaseCharacter: Abstract base with common functionality
+  - GameCharacter: Abstract base with core functionality
   - PlayerCharacter: Player-specific implementation
   - EnemyCharacter: Enemy-specific implementation
 - Enhanced visual feedback
@@ -44,7 +44,7 @@
 
 ### `/game/characters/`
 - New character class hierarchy
-  - `BaseCharacter.ts`: Abstract base class
+  - `GameCharacter.ts`: Abstract base class with core functionality
   - `PlayerCharacter.ts`: Player implementation
   - `EnemyCharacter.ts`: Enemy implementation
   - `CharacterFactory.ts`: Factory for creating characters
@@ -111,7 +111,7 @@ src/
 │   │   ├── GameScene.ts        # Main game board with grid and movement
 │   │   └── UIScene.ts          # Overlay UI elements
 │   ├── characters/
-│   │   ├── BaseCharacter.ts     # Abstract base character class
+│   │   ├── GameCharacter.ts     # Abstract base character class
 │   │   ├── PlayerCharacter.ts   # Player-specific implementation
 │   │   ├── EnemyCharacter.ts    # Enemy-specific implementation
 │   │   └── CharacterFactory.ts  # Character creation factory

@@ -1,9 +1,21 @@
-import { BaseCharacter } from './BaseCharacter';
+import { GameCharacter } from './GameCharacter';
 import { CharacterConfig } from '../types/character';
 
-export class PlayerCharacter extends BaseCharacter {
+export class PlayerCharacter extends GameCharacter {
   constructor(config: CharacterConfig) {
-    super(config);
+    super({
+      ...config,
+      stats: {
+        hp: 100,
+        maxHp: 100,
+        attack: 15,
+        defense: 10,
+        movement: 3,
+        attackRange: 2,
+        abilityRange: 3,
+        ...config.stats
+      }
+    });
   }
 
   protected getHealthColor(percent: number): number {
@@ -66,7 +78,7 @@ export class PlayerCharacter extends BaseCharacter {
     }
   }
 
-  private onDeath(): void {
+  protected onDeath(): void {
     this.scene.tweens.add({
       targets: this,
       alpha: 0,

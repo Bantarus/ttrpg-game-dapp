@@ -1,10 +1,11 @@
 import { BaseScene } from './BaseScene';
-import { BaseCharacter } from '../characters/BaseCharacter';
 import { PlayerCharacter } from '../characters/PlayerCharacter';
 import { EnemyCharacter } from '../characters/EnemyCharacter';
 import { CharacterFactory } from '../characters/CharacterFactory';
+import { TiledMap, MapExit, SpawnPoint } from '../types/map';
+import { WalkableScene } from '../types/scene';
+import { GameCharacter } from '../characters/GameCharacter';
 import { GameState, GamePhase } from '../types';
-import { TiledMap } from '../types/map';
 
 // Add support for custom map properties
 interface MapProperties {
@@ -15,7 +16,7 @@ interface MapProperties {
   exits: MapExit[];
 }
 
-export class GameScene extends BaseScene {
+export class GameScene extends BaseScene implements WalkableScene {
   private gameState!: GameState;
   private player!: PlayerCharacter;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -24,9 +25,9 @@ export class GameScene extends BaseScene {
   private tileSize: number = 64;
   private cameraFollowingEnabled: boolean = true;
   private battleDial?: Phaser.GameObjects.Container;
-  private currentAttacker?: BaseCharacter;
-  private currentDefender?: BaseCharacter;
-  private targetingCharacter: BaseCharacter | null = null;
+  private currentAttacker?: GameCharacter;
+  private currentDefender?: GameCharacter;
+  private targetingCharacter: GameCharacter | null = null;
   private targetingLines!: Phaser.GameObjects.Graphics;
   private interactionWheel?: Phaser.GameObjects.Container;
   private wheelRadius: number = 80;
@@ -110,7 +111,7 @@ export class GameScene extends BaseScene {
     this.player.update();
   }
 
-  private startBattle(attacker: BaseCharacter, defender: BaseCharacter): void {
+  private startBattle(attacker: GameCharacter, defender: GameCharacter): void {
     this.gameState.gamePhase = 'BATTLE';
     this.currentAttacker = attacker;
     this.currentDefender = defender;
@@ -264,72 +265,54 @@ export class GameScene extends BaseScene {
     // Log tile properties
     console.log('Player dropped at tile position:', { tileX, tileY });
     if (tile) {
-        console.log('Tile properties:', {
-            index: tile.index,
-            properties: tile.properties,
-            // Additional tile data that might be useful
-            collides: tile.collides,
-            tileset: tile.tileset.name,
-            layer: tile.layer.name
-        });
+      console.log('Tile properties:', {
+        index: tile.index,
+        properties: tile.properties,
+        collides: tile.collides,
+        tileset: tile.tileset?.name ?? 'No tileset',
+        layer: tile.layer?.name ?? 'No layer'
+      });
     } else {
-        console.log('No tile found at player position');
+      console.log('No tile found at player position');
     }
     
-    // Setup camera following with lerp
+    // Setup camera following with lerp and deadzone
     this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+    this.cameras.main.setDeadzone(100, 100);
     
-    // Rest of the existing createPlayer code...
-    this.player.on('dragstart', () => {
-        this.cameraFollowingEnabled = false;
-        this.cameras.main.stopFollow();
+    // Listen for drag events for camera control
+    this.player.on('characterDragStart', () => {
+      console.log('Character drag started - disabling camera follow');
+      this.cameraFollowingEnabled = false;
+      this.cameras.main.stopFollow();
     });
 
-    this.player.on('dragend', () => {
-        // Get new tile properties after drag
-        const newTileX = Math.floor(this.player.x / this.map.tileWidth);
-        const newTileY = Math.floor(this.player.y / this.map.tileHeight);
-        const newTile = this.groundLayer.getTileAt(newTileX, newTileY);
-
-        console.log('Player dragged to tile position:', { newTileX, newTileY });
-        if (newTile) {
-            console.log('New tile properties:', {
-                index: newTile.index,
-                properties: newTile.properties,
-                collides: newTile.collides,
-                tileset: newTile.tileset?.name ?? 'No tileset',
-                layer: newTile.layer?.name ?? 'No layer'
-            });
+    this.player.on('characterDragEnd', (position: {x: number, y: number}) => {
+      console.log('Character drag ended - resuming camera follow', position);
+      
+      // Pan camera to new position first
+      this.cameras.main.pan(
+        position.x,
+        position.y,
+        250,
+        'Sine.easeOut',
+        false,
+        (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
+          if (progress === 1) {
+            // Resume camera following after pan completes
+            this.cameraFollowingEnabled = true;
+            this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
+          }
         }
-
-        // Always recenter camera on character after drag
-        this.cameras.main.stopFollow();
-        // Pan to character position
-        this.cameras.main.pan(
-            this.player.x,
-            this.player.y,
-            250, // Duration in ms
-            'Sine.easeOut',
-            false,
-            (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
-                if (progress === 1) {
-                    // Resume smooth following after pan completes
-                    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-                }
-            }
-        );
+      );
     });
 
-    this.player.on('moveComplete', (gridPosition: { x: number, y: number }) => {
-        console.log('Character moved to grid position:', gridPosition);
-        // Here you can implement multiplayer sync or other move-related logic
-    });
-
+    // Initialize other character events
     this.initializeCharacterEvents(this.player);
   }
 
-  private initializeCharacterEvents(character: BaseCharacter): void {
-    character.on('characterDeath', (deadCharacter: BaseCharacter) => {
+  private initializeCharacterEvents(character: GameCharacter): void {
+    character.on('characterDeath', (deadCharacter: GameCharacter) => {
       // Clear targeting if the dead character was being targeted
       if (this.targetingCharacter === deadCharacter) {
         this.clearTargeting();
@@ -350,28 +333,28 @@ export class GameScene extends BaseScene {
     if (!this.cursors) return;
 
     const speed = 4;
-    let moved = false;
+    let newX = this.player.x;
+    let newY = this.player.y;
 
     if (this.cursors.left.isDown) {
-      this.player.x -= speed;
-      moved = true;
+        newX -= speed;
     }
     if (this.cursors.right.isDown) {
-      this.player.x += speed;
-      moved = true;
+        newX += speed;
     }
     if (this.cursors.up.isDown) {
-      this.player.y -= speed;
-      moved = true;
+        newY -= speed;
     }
     if (this.cursors.down.isDown) {
-      this.player.y += speed;
-      moved = true;
+        newY += speed;
     }
 
-    if (moved) {
-      // Emit position update event for multiplayer sync
-      // TODO: Implement multiplayer position sync
+    // Check if new position would collide with a wall
+    const tileX = Math.floor(newX / this.tileSize);
+    const tileY = Math.floor(newY / this.tileSize);
+    
+    if (this.isTileWalkable(tileX, tileY)) {
+        this.player.setPosition(newX, newY);
     }
   }
 
@@ -397,7 +380,7 @@ export class GameScene extends BaseScene {
   }
 
   // Connect action buttons to targeting system
-  private handleActionButton(data: { action: string, character: BaseCharacter }): void {
+  private handleActionButton(data: { action: string, character: GameCharacter }): void {
     const { action, character } = data;
     console.log(`Handling action: ${action} for character:`, character);
     
@@ -406,7 +389,7 @@ export class GameScene extends BaseScene {
     }
   }
 
-  private startTargeting(character: BaseCharacter, actionType: 'attack' | 'ability'): void {
+  private startTargeting(character: GameCharacter, actionType: 'attack' | 'ability'): void {
     console.log('Starting targeting with:', actionType, character);
     
     // Clear any existing targeting
@@ -430,7 +413,7 @@ export class GameScene extends BaseScene {
     console.log('Targeting character:', this.targetingCharacter);
   }
 
-  private showTargetingRange(character: BaseCharacter, range: number): void {
+  private showTargetingRange(character: GameCharacter, range: number): void {
     console.log('Showing targeting range:', range);
     const rangeInPixels = range * this.tileSize;
     
@@ -598,8 +581,8 @@ export class GameScene extends BaseScene {
   }
 
   private drawTargetingLine(
-    source: BaseCharacter, 
-    target: BaseCharacter, 
+    source: GameCharacter, 
+    target: GameCharacter, 
     isHovered: boolean,
     baseColor: number = 0xf7a072
   ): void {
@@ -640,11 +623,11 @@ export class GameScene extends BaseScene {
             .fillCircle(target.x, target.y, this.tileSize / 2);
             
         // Camera feedback
-        this.cameras.main.flash(100, 255, 255, 255, 0.2);
+        this.cameras.main.flash(100, 255, 255, 255, false);
     }
   }
 
-  private createInteractionWheel(source: BaseCharacter, target: BaseCharacter): void {
+  private createInteractionWheel(source: GameCharacter, target: GameCharacter): void {
     // Create new wheel container centered on target
     const wheel = this.add.container(target.x, target.y);
     wheel.setDepth(1000);
@@ -710,11 +693,19 @@ export class GameScene extends BaseScene {
     }
   }
 
-  private handleWheelAction(action: string, source: BaseCharacter, target: BaseCharacter): void {
+  private handleWheelAction(action: string, source: GameCharacter, target: GameCharacter): void {
     // Clear the wheel immediately
     this.clearAllInteractionWheels();
 
     switch (action) {
+      case 'move':
+        // Execute move immediately using moveToGrid instead of moveTo
+        const targetGridX = Math.floor(target.x / this.tileSize);
+        const targetGridY = Math.floor(target.y / this.tileSize);
+        
+        source.moveToGrid(targetGridX, targetGridY);
+        break;
+
       case 'attack':
         // Start battle immediately
         this.gameState.gamePhase = 'BATTLE';
@@ -743,29 +734,6 @@ export class GameScene extends BaseScene {
         // Execute ability immediately
         this.cameras.main.flash(100, 0x4a9eff, 0.3);
         // TODO: Implement ability effects
-        break;
-
-      case 'move':
-        // Execute move immediately
-        const dx = target.x - source.x;
-        const dy = target.y - source.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-        const speed = 4;
-        const duration = (distance / speed) * 16; // Adjust for smooth movement
-
-        this.tweens.add({
-            targets: source,
-            x: target.x,
-            y: target.y,
-            duration: duration,
-            ease: 'Cubic.easeOut',
-            onComplete: () => {
-                source.snapToGrid(
-                    Math.floor(target.x / this.tileSize),
-                    Math.floor(target.y / this.tileSize)
-                );
-            }
-        });
         break;
     }
   }
@@ -804,82 +772,6 @@ export class GameScene extends BaseScene {
 
     // Recenter on player
     this.centerCameraOnPlayer();
-  }
-
-  // Update createPlayer to accept coordinates
-  private createPlayer(x: number, y: number): void {
-    this.player = this.characterFactory.createPlayerCharacter(x, y);
-    
-    // Get tile at player position
-    const tileX = Math.floor(x / this.map.tileWidth);
-    const tileY = Math.floor(y / this.map.tileHeight);
-    const tile = this.groundLayer.getTileAt(tileX, tileY);
-
-    // Log tile properties
-    console.log('Player dropped at tile position:', { tileX, tileY });
-    if (tile) {
-        console.log('Tile properties:', {
-            index: tile.index,
-            properties: tile.properties,
-            // Additional tile data that might be useful
-            collides: tile.collides,
-            tileset: tile.tileset.name,
-            layer: tile.layer.name
-        });
-    } else {
-        console.log('No tile found at player position');
-    }
-    
-    // Setup camera following with lerp
-    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-    
-    // Rest of the existing createPlayer code...
-    this.player.on('dragstart', () => {
-        this.cameraFollowingEnabled = false;
-        this.cameras.main.stopFollow();
-    });
-
-    this.player.on('dragend', () => {
-        // Get new tile properties after drag
-        const newTileX = Math.floor(this.player.x / this.map.tileWidth);
-        const newTileY = Math.floor(this.player.y / this.map.tileHeight);
-        const newTile = this.groundLayer.getTileAt(newTileX, newTileY);
-
-        console.log('Player dragged to tile position:', { newTileX, newTileY });
-        if (newTile) {
-            console.log('New tile properties:', {
-                index: newTile.index,
-                properties: newTile.properties,
-                collides: newTile.collides,
-                tileset: newTile.tileset?.name ?? 'No tileset',
-                layer: newTile.layer?.name ?? 'No layer'
-            });
-        }
-
-        // Always recenter camera on character after drag
-        this.cameras.main.stopFollow();
-        // Pan to character position
-        this.cameras.main.pan(
-            this.player.x,
-            this.player.y,
-            250, // Duration in ms
-            'Sine.easeOut',
-            false,
-            (camera: Phaser.Cameras.Scene2D.Camera, progress: number) => {
-                if (progress === 1) {
-                    // Resume smooth following after pan completes
-                    this.cameras.main.startFollow(this.player, true, 0.09, 0.09);
-                }
-            }
-        );
-    });
-
-    this.player.on('moveComplete', (gridPosition: { x: number, y: number }) => {
-        console.log('Character moved to grid position:', gridPosition);
-        // Here you can implement multiplayer sync or other move-related logic
-    });
-
-    this.initializeCharacterEvents(this.player);
   }
 
   // Update centerCameraOnPlayer
@@ -929,15 +821,28 @@ export class GameScene extends BaseScene {
     )!;
 
     // Create the ground layer and set its depth to 0
-    this.groundLayer = this.map.createLayer('Calque de Tuiles 1', this.tileset)!;
+    this.groundLayer = this.map.createLayer('Calque de Tuiles 1', this.tileset) as Phaser.Tilemaps.TilemapLayer;
     this.groundLayer.setDepth(0);
+
+    // Debug: Check tile properties
+    for (let y = 0; y < this.map.height; y++) {
+        for (let x = 0; x < this.map.width; x++) {
+            const tile = this.groundLayer.getTileAt(x, y);
+            if (tile) {
+                console.log(`Tile at ${x},${y}:`, {
+                    index: tile.index,
+                    properties: tile.properties
+                });
+            }
+        }
+    }
 
     // Set collisions based on tile properties
     this.groundLayer.setCollisionByProperty({ State: 3 });
 
     // Enable collision with player
     if (this.player) {
-      this.physics.add.collider(this.player, this.groundLayer);
+        this.physics.add.collider(this.player, this.groundLayer, undefined, this.handleCollision, this);
     }
 
     // Set world bounds based on map dimensions
@@ -1083,18 +988,22 @@ export class GameScene extends BaseScene {
     };
   }
 
-  private isTileWalkable(tileX: number, tileY: number): boolean {
-    // Check if tile is within map bounds
-    if (tileX < 0 || tileX >= this.map.width || tileY < 0 || tileY >= this.map.height) {
-      return false;
-    }
-
-    // Get tile at position
-    const tile = this.groundLayer.getTileAt(tileX, tileY);
-    if (!tile) return true; // No tile means walkable
+  public isTileWalkable(x: number, y: number): boolean {
+    const tile = this.groundLayer.getTileAt(x, y);
+    if (!tile) return false;
     
-    // Check State property - 3 means wall/collision, 0 means walkable
-    return tile.properties?.State !== 3;
+    // Check if tile is a wall or obstacle (State === 3)
+    if (tile.properties?.State === 3) return false;
+    
+    // Check if tile is occupied by another character
+    const isOccupied = Array.from(this.gameState.players.values()).some(character => {
+      if (!character.scene) return false; // Skip destroyed characters
+      const charX = Math.floor(character.x / this.tileSize);
+      const charY = Math.floor(character.y / this.tileSize);
+      return charX === x && charY === y;
+    });
+    
+    return !isOccupied;
   }
 
   // Add the handleLayerProperties method
@@ -1121,5 +1030,22 @@ export class GameScene extends BaseScene {
   private handleExitLayer(layer: Phaser.Tilemaps.LayerData): void {
     // Implementation for handling exit layer
     console.log('Processing exit layer:', layer.name);
+  }
+
+  public getGroundLayer(): Phaser.Tilemaps.TilemapLayer {
+    return this.groundLayer;
+  }
+  
+  protected handleCharacterDrag(pointer: Phaser.Input.Pointer, character: GameCharacter): void {
+    // Remove this method as movement is handled by GameCharacter
+  }
+  
+  protected handleDragEnd(pointer: Phaser.Input.Pointer, character: GameCharacter): void {
+    // Remove this method as movement is handled by GameCharacter
+  }
+
+  // Add this new method to handle collisions
+  private handleCollision(gameObject: any, tile: Phaser.Tilemaps.Tile): boolean {
+    return tile.properties.State === 3;
   }
 } 

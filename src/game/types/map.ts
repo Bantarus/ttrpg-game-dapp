@@ -46,26 +46,35 @@ export interface TiledTileset {
 }
 
 // New types for enhanced map support
-interface SpawnPoint {
+export interface SpawnPoint {
   x: number;
   y: number;
-  type: 'player' | 'enemy' | 'neutral';
-  properties?: Record<string, any>;
+  type: string;
 }
 
-interface MapExit {
+export interface MapExit {
   x: number;
   y: number;
   targetMap: string;
   targetX: number;
   targetY: number;
-  requirements?: Record<string, any>;
 }
 
-interface TileProperties {
-  walkable: boolean;
-  cost?: number;
-  effect?: string;
-  trigger?: string;
-  animation?: string;
-} 
+export interface MapProperties {
+  name: string;
+  difficulty: number;
+  environment: string;
+  spawnPoints: SpawnPoint[];
+  exits: MapExit[];
+}
+
+export interface TileProperties {
+    State: number;
+}
+
+export interface PhaserTile extends Phaser.Tilemaps.Tile {
+    properties: TileProperties;
+}
+
+// Then cast the properties when accessing them:
+const tileProps = tile.properties as TileProperties; 
