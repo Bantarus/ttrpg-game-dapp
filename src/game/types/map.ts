@@ -74,7 +74,4 @@ export interface TileProperties {
 
 export interface PhaserTile extends Phaser.Tilemaps.Tile {
     properties: TileProperties;
-}
-
-// Then cast the properties when accessing them:
-const tileProps = tile.properties as TileProperties; 
+} 

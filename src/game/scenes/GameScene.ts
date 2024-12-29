@@ -22,7 +22,7 @@ export class GameScene extends BaseScene implements WalkableScene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private characterFactory!: CharacterFactory;
   private grid!: Phaser.GameObjects.Grid;
-  private tileSize: number = 64;
+  private tileSize: number = 32;
   private cameraFollowingEnabled: boolean = true;
   private battleDial?: Phaser.GameObjects.Container;
   private currentAttacker?: GameCharacter;
@@ -32,8 +32,8 @@ export class GameScene extends BaseScene implements WalkableScene {
   private interactionWheel?: Phaser.GameObjects.Container;
   private wheelRadius: number = 80;
   private interactionWheels: Set<Phaser.GameObjects.Container> = new Set();
-  private gridWidth: number = 1600; // 25 tiles * 64px
-  private gridHeight: number = 1600; // 25 tiles * 64px
+  private gridWidth: number = 960;  // 30 tiles * 32px
+  private gridHeight: number = 960; // 30 tiles * 32px
   private map!: Phaser.Tilemaps.Tilemap;
   private tileset!: Phaser.Tilemaps.Tileset;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
