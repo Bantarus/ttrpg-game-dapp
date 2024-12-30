@@ -2,10 +2,12 @@ import { BaseScene } from './BaseScene';
 import { PlayerCharacter } from '../characters/PlayerCharacter';
 import { EnemyCharacter } from '../characters/EnemyCharacter';
 import { CharacterFactory } from '../characters/CharacterFactory';
-import { TiledMap, MapExit, SpawnPoint } from '../types/map';
+import { TiledMap, MapExit, SpawnPoint, TileType, Tile } from '../types/tilemap';
 import { WalkableScene } from '../types/scene';
 import { GameCharacter } from '../characters/GameCharacter';
 import { GameState, GamePhase } from '../types';
+import { GameStateManager } from '../managers/GameStateManager';
+import { GameSceneInterface } from '../types/scene';
 
 // Add support for custom map properties
 interface MapProperties {
@@ -16,13 +18,20 @@ interface MapProperties {
   exits: MapExit[];
 }
 
-export class GameScene extends BaseScene implements WalkableScene {
+// Before the class definition, add this interface
+interface TileProperty {
+  name: string;
+  value: any;
+  type: string;
+}
+
+export class GameScene extends BaseScene implements GameSceneInterface, WalkableScene {
   private gameState!: GameState;
   private player!: PlayerCharacter;
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private characterFactory!: CharacterFactory;
   private grid!: Phaser.GameObjects.Grid;
-  private tileSize: number = 32;
+  protected tileSize: number = 32;
   private cameraFollowingEnabled: boolean = true;
   private battleDial?: Phaser.GameObjects.Container;
   private currentAttacker?: GameCharacter;
@@ -38,6 +47,7 @@ export class GameScene extends BaseScene implements WalkableScene {
   private tileset!: Phaser.Tilemaps.Tileset;
   private groundLayer!: Phaser.Tilemaps.TilemapLayer;
   private wallsLayer!: Phaser.Tilemaps.TilemapLayer;
+  private gameStateManager!: GameStateManager;
 
   constructor() {
     super('GameScene');
@@ -76,8 +86,8 @@ export class GameScene extends BaseScene implements WalkableScene {
     this.characterFactory = new CharacterFactory(this);
 
     // Set world bounds
-    const worldWidth = this.gridWidth;  // Use class property
-    const worldHeight = this.gridHeight; // Use class property
+    const worldWidth = this.gridWidth;
+    const worldHeight = this.gridHeight;
     
     // Set the physics world bounds
     this.physics.world.setBounds(0, 0, worldWidth, worldHeight);
@@ -85,23 +95,33 @@ export class GameScene extends BaseScene implements WalkableScene {
     // Set the camera bounds
     this.cameras.main.setBounds(0, 0, worldWidth, worldHeight);
 
-    // Create game board grid
-    this.createBoard();
-    
-    // Add enemy characters
-    this.spawnEnemies();
-    
-    // Initialize targeting system
-    this.initializeTargeting();
-    
-    // Setup input
-    this.cursors = this.input.keyboard.createCursorKeys();
-    
-    // Start UI Scene
-    this.scene.launch('UIScene');
+    try {
+      // Initialize targeting lines graphics
+      this.targetingLines = this.add.graphics().setDepth(100);
+      
+      // Initialize GameStateManager with proper typing
+      this.gameStateManager = new GameStateManager(this, this.tileSize);
+      
+      // Create game board grid
+      this.createBoard();
+      
+      // Add enemy characters after GameStateManager is initialized
+      this.spawnEnemies();
+      
+      // Initialize targeting system
+      this.initializeTargeting();
+      
+      // Initialize cursors before using them
+      this.cursors = this.input.keyboard!.createCursorKeys();
+      
+      // Start UI Scene
+      this.scene.launch('UIScene');
 
-    // Listen for character action triggers
-    this.events.on('actionTriggered', this.handleActionButton, this);
+      // Listen for character action triggers
+      this.events.on('actionTriggered', this.handleActionButton, this);
+    } catch (error) {
+      console.error('Failed to initialize game state:', error);
+    }
   }
 
   update(): void {
@@ -109,6 +129,7 @@ export class GameScene extends BaseScene implements WalkableScene {
       this.handlePlayerMovement();
     }
     this.player.update();
+    // gameLoopManager.update() is removed as state updates come from blockchain
   }
 
   private startBattle(attacker: GameCharacter, defender: GameCharacter): void {
@@ -257,6 +278,9 @@ export class GameScene extends BaseScene implements WalkableScene {
   private createPlayer(x: number, y: number): void {
     this.player = this.characterFactory.createPlayerCharacter(x, y);
     
+    // Add player to game state
+    this.gameState.players.set(this.player.id, this.player);
+    
     // Get tile at player position
     const tileX = Math.floor(x / this.map.tileWidth);
     const tileY = Math.floor(y / this.map.tileHeight);
@@ -371,10 +395,9 @@ export class GameScene extends BaseScene implements WalkableScene {
         pos.y * this.tileSize + this.tileSize / 2
       );
       
-      // Initialize character events
       this.initializeCharacterEvents(enemy);
       
-      // Add to game state
+      // Add enemy to game state
       this.gameState.players.set(enemy.id, enemy);
     });
   }
@@ -753,6 +776,9 @@ export class GameScene extends BaseScene implements WalkableScene {
 
     // Setup resize handler
     this.scale.on('resize', this.handleResize, this);
+
+    // Setup tile interactions
+    this.setupTileInteractions();
   }
 
   private handleResize(gameSize: Phaser.Structs.Size): void {
@@ -881,7 +907,7 @@ export class GameScene extends BaseScene implements WalkableScene {
         if (Array.isArray(layerData)) {
             const layerProperties: Record<string, any> = {};
             
-            layerData.forEach(prop => {
+            layerData.forEach((prop: any) => {
                 if (prop.name && prop.value !== undefined) {
                     layerProperties[prop.name] = prop.value;
                 }
@@ -921,7 +947,6 @@ export class GameScene extends BaseScene implements WalkableScene {
         }
         
         this.initializeCharacterEvents(enemy);
-        this.gameState.players.set(enemy.id, enemy);
       });
     }
   }
@@ -995,9 +1020,10 @@ export class GameScene extends BaseScene implements WalkableScene {
     // Check if tile is a wall or obstacle (State === 3)
     if (tile.properties?.State === 3) return false;
     
-    // Check if tile is occupied by another character
+    // Check if tile is occupied by another character (excluding the moving player)
     const isOccupied = Array.from(this.gameState.players.values()).some(character => {
       if (!character.scene) return false; // Skip destroyed characters
+      if (character === this.player) return false; // Skip the moving player
       const charX = Math.floor(character.x / this.tileSize);
       const charY = Math.floor(character.y / this.tileSize);
       return charX === x && charY === y;
@@ -1045,7 +1071,58 @@ export class GameScene extends BaseScene implements WalkableScene {
   }
 
   // Add this new method to handle collisions
-  private handleCollision(gameObject: any, tile: Phaser.Tilemaps.Tile): boolean {
-    return tile.properties.State === 3;
+  private handleCollision(
+    object1: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Tilemaps.Tile,
+    object2: Phaser.Types.Physics.Arcade.GameObjectWithBody | Phaser.Physics.Arcade.Body | Phaser.Tilemaps.Tile
+  ): boolean {
+    if ('properties' in object2 && object2.properties) {
+      return object2.properties.State === 3;
+    }
+    return false;
+  }
+
+  private setupTileInteractions(): void {
+    const interactiveTiles = this.map.filterTiles((tile: Tile) => 
+      tile.properties?.type !== TileType.NORMAL &&
+      tile.properties?.type !== TileType.WALL
+    ) || [];
+
+    interactiveTiles.forEach(tile => {
+      this.setupTileInteraction(tile as Tile); 
+    });
+  }
+
+  private setupTileInteraction(tile: Tile): void {
+    switch (tile.properties.type) {
+      case TileType.CHEST:
+        // Add chest interaction
+        this.setupChestInteraction(tile);
+        break;
+      case TileType.RESOURCE:
+        // Add resource gathering interaction
+        this.setupResourceInteraction(tile);
+        break;
+      case TileType.PORTAL:
+        // Add portal interaction
+        this.setupPortalInteraction(tile);
+        break;
+    }
+  }
+
+  private setupChestInteraction(tile: Tile): void {
+    // Implement chest interaction
+  }
+
+  private setupResourceInteraction(tile: Tile): void {
+    // Implement resource interaction
+  }
+
+  private setupPortalInteraction(tile: Tile): void {
+    // Implement portal interaction
+  }
+
+  destroy(): void {
+    this.gameStateManager.destroy();
+    this.events.removeAllListeners();
   }
 } 

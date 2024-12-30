@@ -137,17 +137,38 @@ interface CharacterSystem {
 
 ### 3.4 Blockchain Integration
 #### State Management
-- Character positions
-- Battle outcomes
-- Inventory states
-- Player progress
-- Territory control
+- Character positions synchronized with blockchain
+- Enemy behavior controlled by smart contracts
+- Resource collection verified on-chain
+- Object interactions tracked through transactions
 
-#### Transaction Handling
-- Optimistic updates for actions
-- State rollback on failed transactions
-- Action validation
-- Transaction queuing system
+#### Event System
+```typescript
+interface BlockchainEvents {
+  // State changes
+  enemyStateChanged: { enemyId: string, state: EnemyContractState };
+  resourceCollected: { resourceId: string, amount: number };
+  objectPickedUp: { objectId: string };
+  
+  // Contract interactions
+  getGameState(): Promise<any>;
+  collectResource(resourceId: string, amount: number): Promise<void>;
+  pickUpObject(objectId: string): Promise<void>;
+}
+
+### 3.5 State Management
+#### GameStateManager
+- Event-driven state updates
+- Blockchain synchronization
+- Resource management
+- Object interaction handling
+- Player/Enemy state management
+
+#### Plugin System
+- Blockchain state polling
+- Event emission
+- Contract interaction
+- State synchronization
 
 ### 3.5 User Interface
 #### Dashboard
@@ -299,10 +320,10 @@ interface CharacterDepths {
 ```typescript
 interface MapRequirements {
   tilesetHandling: {
-    margin: number;
-    spacing: number;
-    tileWidth: number;
-    tileHeight: number;
+    margin: 1;
+    spacing: 1;
+    tileWidth: 32;
+    tileHeight: 32;
   };
   layerManagement: {
     ground: TilemapLayer;
@@ -313,6 +334,11 @@ interface MapRequirements {
     tileBasedSpawns: boolean;
     fallbackMechanism: boolean;
     searchPattern: 'expanding' | 'spiral';
+  };
+  scaling: {
+    maintainAspectRatio: boolean;
+    consistentTileSize: boolean;
+    gridAlignment: boolean;
   };
 }
 ```

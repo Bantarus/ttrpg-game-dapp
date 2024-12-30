@@ -15,8 +15,18 @@
 ### Map Integration
 - Enhanced Tiled map support
 - Proper tileset handling
+  - Fixed 32x32 tile size
+  - 1px margin and spacing
+  - Consistent scaling across game objects
 - Layer management
+  - Ground layer with proper collision properties
+  - Object layer for spawns and items
+  - Collision layer based on tile states
 - Spawn point system
+- Grid alignment with tilemap
+  - Grid cells match tilemap dimensions
+  - Character movement snaps to grid
+  - Proper depth layering maintained
 
 ### Key Components
 
@@ -219,3 +229,51 @@ Static assets for the game, including sprites, tiles, and UI elements.
 ### `/public/assets/ui`
 - New action icons sprite atlas
 - Atlas configuration for move, attack, and ability icons
+
+## Updated Project Structure
+
+### `/game/plugins/`
+- `ArchethicStatePlugin.ts`: Manages blockchain interactions
+- `types.ts`: Plugin and contract state type definitions
+
+### `/game/managers/`
+- `GameStateManager.ts`: Handles game state and blockchain events
+  - Player management
+  - Enemy synchronization
+  - Resource collection
+  - Object interactions
+
+### Key Components
+
+#### State Management System
+```typescript
+interface StateManagement {
+  GameStateManager: class {
+    // State management
+    players: Map<string, PlayerCharacter>;
+    enemies: Map<string, EnemyCharacter>;
+    
+    // Event handlers
+    handleEnemyStateChange(data: { enemyId: string, state: EnemyContractState }): void;
+    handleResourceCollection(data: { resourceId: string, amount: number }): void;
+    handleObjectPickup(data: { objectId: string }): void;
+  };
+  
+  ArchethicStatePlugin: class extends Phaser.Plugins.BasePlugin {
+    // Blockchain interaction
+    init(): void;
+    getGameState(): Promise<any>;
+    collectResource(resourceId: string, amount: number): Promise<void>;
+    pickUpObject(objectId: string): Promise<void>;
+  };
+}
+```
+
+## Key Updates
+
+### Removed Components
+- `/game/managers/GameLoopManager.ts`: Replaced with GameStateManager
+
+### Modified Components
+- `/game/scenes/GameScene.ts`: Updated to use GameStateManager
+- `/game/plugins/ArchethicStatePlugin.ts`: Enhanced blockchain integration

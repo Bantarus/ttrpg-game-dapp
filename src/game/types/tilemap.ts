@@ -46,10 +46,31 @@ export interface TiledTileset {
 }
 
 // New types for enhanced map support
+export enum TileType {
+  NORMAL = 'normal',
+  WALL = 'wall',
+  CHEST = 'chest',
+  RESOURCE = 'resource',
+  PORTAL = 'portal',
+  ENEMY_SPAWN = 'enemy_spawn',
+  PLAYER_SPAWN = 'player_spawn'
+}
+
+export interface Tile extends Phaser.Tilemaps.Tile {
+  properties: {
+    type: TileType;
+    state: number;
+    [key: string]: any;
+  };
+}
+
 export interface SpawnPoint {
   x: number;
   y: number;
-  type: string;
+  type: TileType;
+  properties: {
+    [key: string]: any;
+  };
 }
 
 export interface MapExit {
@@ -66,12 +87,4 @@ export interface MapProperties {
   environment: string;
   spawnPoints: SpawnPoint[];
   exits: MapExit[];
-}
-
-export interface TileProperties {
-    State: number;
-}
-
-export interface PhaserTile extends Phaser.Tilemaps.Tile {
-    properties: TileProperties;
 } 

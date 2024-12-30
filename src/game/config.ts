@@ -3,6 +3,7 @@ import { MenuScene } from './scenes/MenuScene';
 import { GameScene } from './scenes/GameScene';
 import { UIScene } from './scenes/UIScene';
 import { BootScene } from './scenes/BootScene';
+import { ArchethicStatePlugin } from './plugins/ArchethicStatePlugin';
 
 export const gameConfig: Types.Core.GameConfig = {
   type: Phaser.AUTO,
@@ -29,5 +30,15 @@ export const gameConfig: Types.Core.GameConfig = {
       gravity: { x: 0, y: 0 },
       debug: false
     }
+  },
+  plugins: {
+    global: [
+      {
+        key: 'ArchethicStatePlugin',
+        plugin: ArchethicStatePlugin,
+        mapping: 'archethicPlugin',
+        start: true
+      }
+    ]
   }
 }; 
