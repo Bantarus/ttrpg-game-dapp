@@ -125,31 +125,41 @@ src/
 │   │   ├── PlayerCharacter.ts   # Player-specific implementation
 │   │   ├── EnemyCharacter.ts    # Enemy-specific implementation
 │   │   └── CharacterFactory.ts  # Character creation factory
+│   ├── managers/
+│   │   └── GameStateManager.ts  # Manages game state and blockchain events
+│   ├── plugins/
+│   │   ├── ArchethicStatePlugin.ts  # Blockchain interaction plugin
+│   │   └── types.ts                 # Plugin type definitions
+│   ├── utils/
+│   │   └── TileUtils.ts        # Utility functions for tile operations
 │   ├── types/
-│   │   ├── index.ts
-│   │   └──character.ts        # Character-related type definitions
+│   │   ├── index.ts            # Core game type definitions
 │   │   ├── character.ts        # Character-related type definitions
-│   │   └── map.ts             # Map and tilemap type definitions
-│   └── config.ts
+│   │   ├── scene.ts           # Scene interface definitions
+│   │   ├── tilemap.ts         # Map and tilemap type definitions
+│   │   └── map.ts             # Map-specific type definitions
+│   └── config.ts              # Game configuration
 │
 ├── lib/
-│   └── utils.ts
+│   └── utils.ts               # Utility functions
 │
 ├── pages/
-│   ├── _app.tsx
-│   ├── _document.tsx
-│   ├── index.tsx
-│   └── game.tsx
+│   ├── _app.tsx              # Next.js app wrapper
+│   ├── _document.tsx         # Custom document component
+│   ├── index.tsx            # Home page
+│   └── game.tsx             # Game page
 │
 ├── types/
-│   ├──index.d.ts
+│   └── index.d.ts           # Global type declarations
 │
 ├── styles/
-│   └── globals.css
+│   └── globals.css          # Global styles
 │
 └── public/
     └── assets/
         ├── tiles/
+        │   ├── map-01.json        # Tilemap data
+        │   └── tmw_desert_spacing.png  # Tileset image
         ├── characters/
         │   ├── player.png
         │   └── enemy.png
@@ -168,6 +178,9 @@ Contains all React components, including layout components and reusable UI eleme
 Houses all Phaser-related code, including:
 - `scenes/`: Game scene implementations
 - `characters/`: Character-related classes and factories
+- `managers/`: Game state and resource management
+- `plugins/`: Blockchain integration and plugins
+- `utils/`: Utility functions for game operations
 - `types/`: Game-specific TypeScript definitions
 - `config.ts`: Phaser game configuration
 
@@ -191,9 +204,19 @@ Static assets for the game, including sprites, tiles, and UI elements.
 - `components/GameComponent.tsx`: Main game container
 - `components/layout/DashboardLayout.tsx`: Main application layout
 - `pages/_app.tsx`: Next.js application wrapper
+- `pages/_document.tsx`: Custom document component
 
 ### Type Definitions
-- `game/types/index.ts`: Game-related type definitions 
+- `game/types/index.ts`: Core game type definitions
+- `game/types/character.ts`: Character-related types
+- `game/types/scene.ts`: Scene interface definitions
+- `game/types/tilemap.ts`: Map and tilemap type definitions
+- `game/plugins/types.ts`: Plugin and contract state types
+
+### Game Logic
+- `game/managers/GameStateManager.ts`: Game state and blockchain event management
+- `game/plugins/ArchethicStatePlugin.ts`: Blockchain integration
+- `game/utils/TileUtils.ts`: Tile-related utility functions
 
 ## Key Updates
 

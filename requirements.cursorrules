@@ -1,1 +1,14 @@
-When answering implementation question about phaser topics, subject or concepts , refer to the phaser concepts docs @phaser-concepts to give accurate and up to date response.
+When answering implementation question about phaser topics, subject or concepts , refer to the phaser concepts docs @phaser-concepts to give accurate and up to date responses.
+Also take into account the tech stack :
+### Frontend
+- Next.js (React Framework)
+- TypeScript
+- Phaser 4 (Game Engine)
+- TailwindCSS (Styling)
+- shadcn/ui (UI Components)
+ ### Backend : Blockchain Integration
+- Archethic SDK : @archethic-libjs-readme doc.
+- Transaction-based state management
+- Deterministic combat system
+When searching for codebase context , check first the project-structure.md file.
+Tilemap is build with the Tiled tool exported as JSON Map Format, see doc @tiled-json-map-format

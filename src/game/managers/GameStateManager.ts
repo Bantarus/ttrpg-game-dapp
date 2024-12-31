@@ -2,26 +2,29 @@ import { PlayerCharacter } from '../characters/PlayerCharacter';
 import { EnemyCharacter } from '../characters/EnemyCharacter';
 import { EnemyContractState } from '../plugins/types';
 import { GameSceneInterface } from '../types/scene';
+import { ArchethicStatePlugin } from '../plugins/ArchethicStatePlugin';
 
 export class GameStateManager {
   private scene: GameSceneInterface;
   private players: Map<string, PlayerCharacter>;
   private enemies: Map<string, EnemyCharacter>;
   private tileSize: number;
+  private archethicPlugin: ArchethicStatePlugin;
 
   constructor(scene: GameSceneInterface, tileSize: number) {
     this.scene = scene;
     this.players = new Map();
     this.enemies = new Map();
     this.tileSize = tileSize;
+    this.archethicPlugin = (scene as any).plugins.get('ArchethicStatePlugin');
     this.initialize();
   }
 
   private initialize(): void {
     // Subscribe to blockchain state events
-    this.scene.archethicPlugin.on('enemyStateChanged', this.handleEnemyStateChange.bind(this));
-    this.scene.archethicPlugin.on('resourceCollected', this.handleResourceCollection.bind(this));
-    this.scene.archethicPlugin.on('objectPickedUp', this.handleObjectPickup.bind(this));
+    this.archethicPlugin.on('enemyStateChanged', this.handleEnemyStateChange.bind(this));
+    this.archethicPlugin.on('resourceCollected', this.handleResourceCollection.bind(this));
+    this.archethicPlugin.on('objectPickedUp', this.handleObjectPickup.bind(this));
   }
 
   public addPlayer(playerId: string, player: PlayerCharacter): void {
@@ -39,13 +42,13 @@ export class GameStateManager {
       );
 
       // Update enemy stats
-      enemy.updateStats(state.stats);
+      // TODO: Implement updateStats method
 
       // Handle state-specific behavior
       switch (state.state) {
         
         case 'idle':
-          enemy.idle();
+          // TODO: Implement idle behavior
           break;
       }
     }
@@ -78,8 +81,6 @@ export class GameStateManager {
   }
 
   destroy(): void {
-    // Clean up event listeners
-    this.scene.archethicPlugin.removeAllListeners();
     this.players.clear();
     this.enemies.clear();
   }

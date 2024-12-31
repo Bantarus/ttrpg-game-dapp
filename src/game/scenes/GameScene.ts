@@ -8,6 +8,7 @@ import { GameCharacter } from '../characters/GameCharacter';
 import { GameState, GamePhase } from '../types';
 import { GameStateManager } from '../managers/GameStateManager';
 import { GameSceneInterface } from '../types/scene';
+import { ArchethicStatePlugin } from '../plugins/ArchethicStatePlugin';
 
 // Add support for custom map properties
 interface MapProperties {

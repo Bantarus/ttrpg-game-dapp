@@ -217,12 +217,12 @@ export abstract class GameCharacter extends Phaser.GameObjects.Container {
         tile.x === currentTileX && tile.y === currentTileY
       );
       
-      console.log('Drag position:', {
+      /* console.log('Drag position:', {
         worldPos: { x: newX, y: newY },
         tilePos: { x: currentTileX, y: currentTileY },
         isReachable,
         tileSize: this.tileSize
-      });
+      }); */
       
       // Update position and visual feedback
       this.setPosition(newX, newY);
@@ -255,14 +255,14 @@ export abstract class GameCharacter extends Phaser.GameObjects.Container {
       // Check if the tile is reachable
       const isValidMove = this.reachableTiles.some(tile => {
         const match = tile.x === newGridX && tile.y === newGridY;
-        console.log('Checking tile:', { 
+      /*   console.log('Checking tile:', { 
           tileX: tile.x, 
           tileY: tile.y, 
           newGridX, 
           newGridY, 
           match,
           reachableTile: tile
-        });
+        }); */
         return match;
       });
 
