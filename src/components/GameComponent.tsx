@@ -7,7 +7,7 @@ export const GameComponent = () => {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && containerRef.current) {
+    if (typeof window !== 'undefined' && containerRef.current && !gameRef.current) {
       const container = containerRef.current;
       const width = container.clientWidth;
       const height = container.clientHeight;
@@ -22,7 +22,10 @@ export const GameComponent = () => {
         }
       };
 
-      gameRef.current = new Game(config);
+      if (!gameRef.current) {
+        console.log('Initializing Phaser game...');
+        gameRef.current = new Game(config);
+      }
 
       const handleResize = () => {
         if (gameRef.current) {

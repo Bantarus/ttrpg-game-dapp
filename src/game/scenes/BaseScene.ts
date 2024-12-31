@@ -20,4 +20,16 @@ export class BaseScene extends Scene {
   update(time: number, delta: number): void {
     // Common update logic
   }
+
+  wake(): void {
+    // Common wake logic
+  }
+
+  sleep(): void {
+    // Common sleep logic
+  }
+
+  stop(): void {
+    // Common stop logic
+  }
 } 
