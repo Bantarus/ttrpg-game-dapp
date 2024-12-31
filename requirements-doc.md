@@ -221,11 +221,42 @@ interface GameConfig {
 ### 4.2 Scene Structure
 ```typescript
 interface SceneStructure {
-  BootScene: Scene;     // Loading and initialization
-  MenuScene: Scene;     // Main menu and character selection
-  GameScene: Scene;     // Main game board
-  BattleScene: Scene;   // Combat encounters
+  BootScene: Scene;     // Asset loading and initialization
+  GameScene: Scene;     // Main game board and logic
   UIScene: Scene;       // Overlay UI elements
+  CharacterPreviewScene: Scene;  // Character visualization
+}
+
+interface BootSceneRequirements {
+  assetLoading: {
+    loadingBar: boolean;
+    errorHandling: boolean;
+    verification: boolean;
+    debugLogging: boolean;
+  };
+  initialization: {
+    sceneTransition: boolean;
+    stateSetup: boolean;
+  };
+}
+
+interface AssetManagement {
+  preload: {
+    characters: string[];
+    ui: string[];
+    tiles: string[];
+    atlas: string[];
+  };
+  verification: {
+    loadComplete: boolean;
+    errorHandling: boolean;
+    fallbackSystem: boolean;
+  };
+  loading: {
+    progressBar: boolean;
+    debugInfo: boolean;
+    errorLogging: boolean;
+  };
 }
 ```
 
@@ -235,18 +266,24 @@ interface Character {
   id: string;           // Unique identifier
   owner: string;        // Wallet address
   name: string;
+  level: number;
   stats: {
     hp: number;
+    maxHp: number;
     attack: number;
     defense: number;
     movement: number;
+    attackRange: number;
+    abilityRange: number;
   };
-  position: {
-    x: number;
-    y: number;
+  class?: string;       // Character class
+  appearance?: {        // Appearance customization
+    sprite: string;
+    colors: Record<string, string>;
   };
-  inventory: Item[];
-  abilities: Ability[];
+  abilities?: string[]; // Special abilities
+  inventory?: Item[];
+  lastPlayed?: Date;
 }
 ```
 
@@ -343,16 +380,40 @@ interface MapRequirements {
 }
 ```
 
+### 4.5 Character Management System
+```typescript
+interface CharacterManagement {
+  // Character CRUD operations
+  createCharacter(data: CharacterCreationData): Promise<Character>;
+  updateCharacter(id: string, data: Partial<Character>): Promise<Character>;
+  deleteCharacter(id: string): Promise<void>;
+  getCharacter(id: string): Promise<Character>;
+  
+  // Character roster
+  getCharacterList(): Promise<Character[]>;
+  
+  // Blockchain integration
+  saveCharacterOnChain(character: Character): Promise<void>;
+  loadCharacterFromChain(id: string): Promise<Character>;
+  
+  // Preview system
+  previewCharacter(data: Partial<Character>): void;
+  updatePreview(changes: Partial<Character>): void;
+  cleanupPreview(): void;
+}
+
 ## 5. Implementation Phases
 
 ### Phase 1: Foundation
 - Project setup with Next.js and Phaser
+- Scene management system implementation
+- Asset loading and management system
 - Basic game board implementation
 - Character movement system
 - UI component framework
 
 ### Phase 2: Core Mechanics
-- Battle dial implementation
+- Battle wheel hud/ui implementation
 - Combat system
 - Character creation
 - Basic blockchain integration
@@ -398,7 +459,23 @@ interface MapRequirements {
 - Prettier
 - Chrome DevTools for debugging
 
-## 10. Development Guidelines/
+## 10. Development Guidelines
+
+### 10.1 Scene Management
+- Implement proper scene hierarchy
+- Centralize asset loading in BootScene
+- Handle scene transitions gracefully
+- Implement proper cleanup on scene destruction
+- Manage scene dependencies effectively
+
+### 10.2 Asset Management
+- Centralize asset loading in BootScene
+- Implement proper error handling
+- Add loading state visualization
+- Verify asset loading completion
+- Implement debug logging system
+- Handle loading failures gracefully
+- Provide fallback assets when needed
 
 ### 10.1 Character System
 - Use Container-based approach for characters

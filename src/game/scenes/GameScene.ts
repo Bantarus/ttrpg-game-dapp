@@ -60,23 +60,6 @@ export class GameScene extends BaseScene implements GameSceneInterface, Walkable
   }
 
   preload(): void {
-    // Load character assets
-    this.load.image('player', '/assets/characters/player.png');
-    this.load.image('enemy', '/assets/characters/enemy.png');
-
-    // Load the action icons texture atlas
-    this.load.atlas(
-      'action-icons',                              // texture key
-      'assets/ui/action-icons.png',               // texture path
-      'assets/ui/action-icons.json'               // atlas json path
-    );
-
-    // Debug loading
-    this.load.on('filecomplete-atlas-action-icons', () => {
-      console.log('Action icons loaded successfully');
-      console.log('Available frames:', this.textures.get('action-icons').getFrameNames());
-    });
-
     // Load tilemap and tileset with correct paths and names
     this.load.tilemapTiledJSON('desert-map', 'assets/tiles/map-01.json');
     this.load.image('tmw_desert_spacing', 'assets/tiles/tmw_desert_spacing.png');
@@ -855,12 +838,12 @@ export class GameScene extends BaseScene implements GameSceneInterface, Walkable
     for (let y = 0; y < this.map.height; y++) {
         for (let x = 0; x < this.map.width; x++) {
             const tile = this.groundLayer.getTileAt(x, y);
-            if (tile) {
+         /*    if (tile) {
                 console.log(`Tile at ${x},${y}:`, {
                     index: tile.index,
                     properties: tile.properties
                 });
-            }
+            } */
         }
     }
 

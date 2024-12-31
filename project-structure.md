@@ -2,6 +2,26 @@
 
 ## Recent Updates
 
+### Scene Management System
+- Implemented proper scene hierarchy:
+  - BootScene: Asset loading and initialization
+  - GameScene: Main game board and logic
+  - UIScene: Overlay UI elements
+  - CharacterPreviewScene: Character visualization
+- Enhanced asset loading system:
+  - Centralized loading in BootScene
+  - Loading bar visualization
+  - Error handling and logging
+  - Asset verification system
+
+### Asset Management System
+- Centralized asset loading
+- Improved error handling
+- Loading state visualization
+- Asset verification
+- Debug logging system
+- Loading progress tracking
+
 ### Depth Management System
 - Implemented clear depth hierarchy:
   - Ground layer (0)
@@ -111,15 +131,18 @@ src/
 │   │   ├── sheet.tsx
 │   │   └── scroll-area.tsx
 │   ├── GameComponent.tsx
+│   ├── CharacterCreation.tsx  # Character creation form with preview
 │   └── WalletConnect.tsx
 │
 ├── game/
 │   ├── scenes/
 │   │   ├── BaseScene.ts        # Base scene with common functionality
-│   │   ├── BootScene.ts        # Initial loading scene
-│   │   ├── MenuScene.ts        # Main menu scene
+│   │   ├── BootScene.ts        # Asset loading and initialization
 │   │   ├── GameScene.ts        # Main game board with grid and movement
+│   │   ├── CharacterPreviewScene.ts  # Character preview scene
 │   │   └── UIScene.ts          # Overlay UI elements
+│   ├── events/
+│   │   └── GameEventBus.ts    # Event bus for React-Phaser communication
 │   ├── characters/
 │   │   ├── GameCharacter.ts     # Abstract base character class
 │   │   ├── PlayerCharacter.ts   # Player-specific implementation
@@ -147,7 +170,8 @@ src/
 │   ├── _app.tsx              # Next.js app wrapper
 │   ├── _document.tsx         # Custom document component
 │   ├── index.tsx            # Home page
-│   └── game.tsx             # Game page
+│   ├── game.tsx             # Game page
+│   └── characters.tsx      # Character roster management
 │
 ├── types/
 │   └── index.d.ts           # Global type declarations
@@ -300,3 +324,39 @@ interface StateManagement {
 ### Modified Components
 - `/game/scenes/GameScene.ts`: Updated to use GameStateManager
 - `/game/plugins/ArchethicStatePlugin.ts`: Enhanced blockchain integration
+
+### New Components
+
+#### `/components/CharacterCreation.tsx`
+- Character creation form component
+- Stat customization interface
+- Real-time preview integration
+- Edit/Create mode support
+
+#### `/game/scenes/CharacterPreviewScene.ts`
+- Character preview visualization
+- Real-time stat updates
+- Ambient animations
+- Event-based updates
+
+#### `/game/events/GameEventBus.ts`
+- Singleton event bus pattern
+- React-Phaser communication
+- Type-safe event handling
+- Cleanup management
+
+### Modified Components
+
+#### `/pages/characters.tsx`
+- Character roster management
+- Grid-based character list
+- Character CRUD operations
+- Responsive layout design
+
+### `/game/scenes/BootScene.ts`
+- Asset loading management
+- Loading bar implementation
+- Error handling system
+- Asset verification
+- Debug logging
+- Scene transition management

@@ -6,6 +6,8 @@ Also take into account the tech stack :
 - Phaser 4 (Game Engine)
 - TailwindCSS (Styling)
 - shadcn/ui (UI Components)
+- zod schema
+- zustand local store
  ### Backend : Blockchain Integration
 - Archethic SDK : @archethic-libjs-readme doc.
 - Transaction-based state management

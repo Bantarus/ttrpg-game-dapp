@@ -9,22 +9,28 @@ export class GameStateManager {
   private players: Map<string, PlayerCharacter>;
   private enemies: Map<string, EnemyCharacter>;
   private tileSize: number;
-  private archethicPlugin: ArchethicStatePlugin;
+  private archethicPlugin: ArchethicStatePlugin | null = null;
 
   constructor(scene: GameSceneInterface, tileSize: number) {
     this.scene = scene;
     this.players = new Map();
     this.enemies = new Map();
     this.tileSize = tileSize;
-    this.archethicPlugin = (scene as any).plugins.get('ArchethicStatePlugin');
     this.initialize();
   }
 
   private initialize(): void {
-    // Subscribe to blockchain state events
-    this.archethicPlugin.on('enemyStateChanged', this.handleEnemyStateChange.bind(this));
-    this.archethicPlugin.on('resourceCollected', this.handleResourceCollection.bind(this));
-    this.archethicPlugin.on('objectPickedUp', this.handleObjectPickup.bind(this));
+    // Get the plugin with null check
+    this.archethicPlugin = (this.scene as any).plugins?.get('ArchethicStatePlugin');
+    
+    // Only subscribe to events if plugin is available
+    if (this.archethicPlugin) {
+      this.archethicPlugin.on('enemyStateChanged', this.handleEnemyStateChange.bind(this));
+      this.archethicPlugin.on('resourceCollected', this.handleResourceCollection.bind(this));
+      this.archethicPlugin.on('objectPickedUp', this.handleObjectPickup.bind(this));
+    } else {
+      console.warn('ArchethicStatePlugin not available - some features may be limited');
+    }
   }
 
   public addPlayer(playerId: string, player: PlayerCharacter): void {
@@ -32,6 +38,11 @@ export class GameStateManager {
   }
 
   private handleEnemyStateChange({ enemyId, state }: { enemyId: string, state: EnemyContractState }): void {
+    if (!this.archethicPlugin) {
+      console.warn('ArchethicStatePlugin not available - enemy state changes will not be processed');
+      return;
+    }
+
     const enemy = this.enemies.get(enemyId);
     
     if (enemy) {
@@ -46,7 +57,6 @@ export class GameStateManager {
 
       // Handle state-specific behavior
       switch (state.state) {
-        
         case 'idle':
           // TODO: Implement idle behavior
           break;
@@ -55,11 +65,19 @@ export class GameStateManager {
   }
 
   private handleResourceCollection(data: { resourceId: string, amount: number }): void {
+    if (!this.archethicPlugin) {
+      console.warn('ArchethicStatePlugin not available - resource collection will not be processed');
+      return;
+    }
     // Update game state with collected resource
     this.scene.events.emit('resourceCollected', data);
   }
 
   private handleObjectPickup(data: { objectId: string }): void {
+    if (!this.archethicPlugin) {
+      console.warn('ArchethicStatePlugin not available - object pickup will not be processed');
+      return;
+    }
     // Update game state with picked up object
     this.scene.events.emit('objectPickedUp', data);
   }
